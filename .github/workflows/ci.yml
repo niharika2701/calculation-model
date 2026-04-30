@@ -1,4 +1,4 @@
-xname: CI - Module 11 Calculations API
+name: CI - Module 11 Calculations API
 
 on:
   push:
@@ -49,7 +49,7 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Run user tests (Module 10)
+      - name: Run user tests
         run: python -m pytest tests/test_users.py tests/test_auth.py tests/test_schemas.py -v
 
       - name: Run calculation unit tests
