@@ -1,0 +1,12 @@
+fastapi==0.115.0
+uvicorn==0.42.0
+sqlalchemy==2.0.36
+psycopg2-binary==2.9.9
+python-dotenv==1.2.2
+jinja2==3.1.4
+passlib[bcrypt]==1.7.4
+bcrypt==4.3.0
+pydantic[email]==2.10.0
+pytest==7.4.3
+pytest-asyncio==0.23.2
+httpx==0.25.2

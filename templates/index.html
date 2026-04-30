@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FastAPI Calculator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #0e0e0e;
+      --surface: #161616;
+      --card: #1e1e1e;
+      --border: #2e2e2e;
+      --accent: #e8ff47;
+      --accent2: #47ffe0;
+      --danger: #ff4747;
+      --text: #f0f0f0;
+      --muted: #888;
+      --mono: 'Share Tech Mono', monospace;
+      --sans: 'Barlow', sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 16px 80px;
+      background-image:
+        repeating-linear-gradient(0deg, transparent, transparent 39px, #1a1a1a 39px, #1a1a1a 40px),
+        repeating-linear-gradient(90deg, transparent, transparent 39px, #1a1a1a 39px, #1a1a1a 40px);
+    }
+
+    header {
+      width: 100%;
+      max-width: 520px;
+      margin-bottom: 32px;
+      display: flex;
+      align-items: flex-end;
+      gap: 16px;
+    }
+
+    .logo {
+      font-family: var(--mono);
+      font-size: 3rem;
+      color: var(--accent);
+      line-height: 1;
+      letter-spacing: -2px;
+      text-shadow: 0 0 24px rgba(232,255,71,0.35);
+    }
+
+    .logo-sub {
+      font-size: 0.7rem;
+      color: var(--muted);
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      padding-bottom: 8px;
+    }
+
+    .display-wrap {
+      width: 100%;
+      max-width: 520px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      padding: 20px 24px;
+      margin-bottom: 24px;
+      position: relative;
+    }
+
+    .display-wrap::before {
+      content: 'OUTPUT';
+      position: absolute;
+      top: -9px; left: 16px;
+      background: var(--surface);
+      padding: 0 8px;
+      font-size: 0.65rem;
+      letter-spacing: 3px;
+      color: var(--accent);
+      font-family: var(--mono);
+    }
+
+    .display-expr {
+      font-family: var(--mono);
+      font-size: 0.85rem;
+      color: var(--muted);
+      min-height: 20px;
+      margin-bottom: 6px;
+    }
+
+    .display-result {
+      font-family: var(--mono);
+      font-size: 2.4rem;
+      color: var(--accent);
+      letter-spacing: -1px;
+      min-height: 1em;
+      word-break: break-all;
+      text-shadow: 0 0 20px rgba(232,255,71,0.25);
+      transition: color 0.2s;
+    }
+
+    .display-result.error { color: var(--danger); text-shadow: none; }
+    .display-result.loading { color: var(--accent2); }
+
+    .inputs-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      width: 100%;
+      max-width: 520px;
+      margin-bottom: 20px;
+    }
+
+    .input-group { position: relative; }
+
+    .input-label {
+      position: absolute;
+      top: -9px; left: 10px;
+      background: var(--bg);
+      padding: 0 6px;
+      font-size: 0.65rem;
+      letter-spacing: 3px;
+      color: var(--accent2);
+      font-family: var(--mono);
+    }
+
+    input[type="number"] {
+      width: 100%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 1.3rem;
+      padding: 14px 16px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      -moz-appearance: textfield;
+    }
+
+    input[type="number"]::-webkit-inner-spin-button { display: none; }
+
+    input[type="number"]:focus {
+      border-color: var(--accent2);
+      box-shadow: 0 0 0 1px var(--accent2);
+    }
+
+    .ops-label {
+      font-size: 0.65rem;
+      letter-spacing: 3px;
+      color: var(--muted);
+      text-transform: uppercase;
+      font-family: var(--mono);
+      margin-bottom: 10px;
+      width: 100%;
+      max-width: 520px;
+    }
+
+    .ops-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      width: 100%;
+      max-width: 520px;
+      margin-bottom: 20px;
+    }
+
+    .op-btn {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      letter-spacing: 1px;
+      padding: 14px 8px;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: all 0.15s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .op-btn .sym {
+      font-size: 1.4rem;
+      color: var(--accent);
+      line-height: 1;
+    }
+
+    .op-btn:hover {
+      background: #262626;
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .op-btn:active { transform: scale(0.97); }
+
+    .op-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #000;
+    }
+
+    .op-btn.active .sym { color: #000; }
+
+    .calc-btn {
+      width: 100%;
+      max-width: 520px;
+      background: var(--accent);
+      border: none;
+      color: #000;
+      font-family: var(--mono);
+      font-size: 1rem;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      padding: 18px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .calc-btn:hover { opacity: 0.9; }
+    .calc-btn:active { transform: scale(0.99); }
+    .calc-btn:disabled {
+      background: var(--border);
+      color: var(--muted);
+      cursor: not-allowed;
+    }
+
+    .history-wrap {
+      width: 100%;
+      max-width: 520px;
+      margin-top: 32px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .history-head {
+      padding: 10px 16px;
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      letter-spacing: 3px;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .clear-hist {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      letter-spacing: 2px;
+      padding: 3px 8px;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: all 0.15s;
+    }
+
+    .clear-hist:hover { border-color: var(--danger); color: var(--danger); }
+
+    .history-list { max-height: 220px; overflow-y: auto; }
+
+    .history-item {
+      padding: 10px 16px;
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      border-bottom: 1px solid #1a1a1a;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .history-item .expr { color: var(--muted); }
+    .history-item .res  { color: var(--accent); }
+    .history-item .res.err { color: var(--danger); }
+
+    .history-empty {
+      padding: 20px 16px;
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .api-badge {
+      margin-top: 24px;
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      letter-spacing: 2px;
+      color: var(--muted);
+    }
+
+    .api-badge a { color: var(--accent2); text-decoration: none; }
+    .api-badge a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo">CALC</div>
+    <div class="logo-sub">FastAPI Edition v1.0</div>
+  </header>
+
+  <div class="display-wrap">
+    <div class="display-expr" id="expr">ready</div>
+    <div class="display-result" id="result">0</div>
+  </div>
+
+  <div class="inputs-row">
+    <div class="input-group">
+      <span class="input-label">VALUE_A</span>
+      <input type="number" id="numA" value="0" step="any"/>
+    </div>
+    <div class="input-group">
+      <span class="input-label">VALUE_B</span>
+      <input type="number" id="numB" value="0" step="any"/>
+    </div>
+  </div>
+
+  <div class="ops-label">// SELECT OPERATION</div>
+  <div class="ops-grid">
+    <button class="op-btn active" data-op="add">
+      <span class="sym">+</span>ADD
+    </button>
+    <button class="op-btn" data-op="subtract">
+      <span class="sym">−</span>SUBTRACT
+    </button>
+    <button class="op-btn" data-op="multiply">
+      <span class="sym">×</span>MULTIPLY
+    </button>
+    <button class="op-btn" data-op="divide">
+      <span class="sym">÷</span>DIVIDE
+    </button>
+    <button class="op-btn" data-op="power">
+      <span class="sym">^</span>POWER
+    </button>
+    <button class="op-btn" data-op="modulo">
+      <span class="sym">%</span>MODULO
+    </button>
+  </div>
+
+  <button class="calc-btn" id="calcBtn">[ CALCULATE ]</button>
+
+  <div class="history-wrap">
+    <div class="history-head">
+      <span>// HISTORY</span>
+      <button class="clear-hist" id="clearHist">CLEAR</button>
+    </div>
+    <div class="history-list" id="histList">
+      <div class="history-empty">No calculations yet</div>
+    </div>
+  </div>
+
+  <div class="api-badge">
+    API docs →
+    <a href="/docs" target="_blank">/docs</a>
+    &nbsp;|&nbsp;
+    Health →
+    <a href="/health" target="_blank">/health</a>
+  </div>
+
+  <script>
+    const SYMBOLS = {
+      add:      '+',
+      subtract: '−',
+      multiply: '×',
+      divide:   '÷',
+      power:    '^',
+      modulo:   '%',
+    };
+
+    let selectedOp = 'add';
+    let history    = [];
+
+    // Select operation
+    document.querySelectorAll('.op-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.op-btn')
+          .forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedOp = btn.dataset.op;
+      });
+    });
+
+    // Calculate on button click OR Enter key
+    document.getElementById('calcBtn')
+      .addEventListener('click', calculate);
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Enter') calculate();
+    });
+
+    async function calculate() {
+      const a  = parseFloat(document.getElementById('numA').value);
+      const b  = parseFloat(document.getElementById('numB').value);
+      const sym = SYMBOLS[selectedOp];
+
+      if (isNaN(a) || isNaN(b)) {
+        showResult('ERR: invalid input', true);
+        return;
+      }
+
+      document.getElementById('expr').textContent = `${a} ${sym} ${b}`;
+      showResult('...', false, true);
+      document.getElementById('calcBtn').disabled = true;
+
+      try {
+        const res  = await fetch(`/${selectedOp}`, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ a, b }),
+        });
+        const data = await res.json();
+
+        if (!res.ok) {
+          const msg = data.error || 'Unknown error';
+          showResult(`ERR: ${msg}`, true);
+          addHistory(`${a} ${sym} ${b}`, `ERR: ${msg}`, true);
+        } else {
+          showResult(data.result);
+          addHistory(`${a} ${sym} ${b}`, data.result, false);
+        }
+      } catch (err) {
+        showResult('ERR: network', true);
+      } finally {
+        document.getElementById('calcBtn').disabled = false;
+      }
+    }
+
+    function showResult(val, isErr = false, isLoad = false) {
+      const el = document.getElementById('result');
+      el.textContent = val;
+      el.className   = 'display-result';
+      if (isErr)  el.classList.add('error');
+      if (isLoad) el.classList.add('loading');
+    }
+
+    function addHistory(expr, result, isErr) {
+      history.unshift({ expr, result, isErr });
+      renderHistory();
+    }
+
+    function renderHistory() {
+      const list = document.getElementById('histList');
+      if (!history.length) {
+        list.innerHTML =
+          '<div class="history-empty">No calculations yet</div>';
+        return;
+      }
+      list.innerHTML = history.map(h => `
+        <div class="history-item">
+          <span class="expr">${h.expr} =</span>
+          <span class="res ${h.isErr ? 'err' : ''}">${h.result}</span>
+        </div>
+      `).join('');
+    }
+
+    document.getElementById('clearHist')
+      .addEventListener('click', () => {
+        history = [];
+        renderHistory();
+      });
+  </script>
+</body>
+</html>
